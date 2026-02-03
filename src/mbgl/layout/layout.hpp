@@ -44,7 +44,7 @@ public:
     std::shared_ptr<FontFaces> fontFaces;
     GlyphDependencies& glyphDependencies;
     ImageDependencies& imageDependencies;
-    std::set<std::string>& availableImages;
+    const std::set<std::string>& availableImages;
 };
 
 } // namespace mbgl

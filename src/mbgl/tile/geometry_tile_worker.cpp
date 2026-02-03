@@ -130,7 +130,7 @@ GeometryTileWorker::~GeometryTileWorker() {
 */
 
 void GeometryTileWorker::setData(std::unique_ptr<const GeometryTileData> data_,
-                                 std::set<std::string> availableImages_,
+                                 std::shared_ptr<const std::set<std::string>> availableImages_,
                                  uint64_t correlationID_) {
     MLN_TRACE_FUNC();
 
@@ -157,7 +157,7 @@ void GeometryTileWorker::setData(std::unique_ptr<const GeometryTileData> data_,
 }
 
 void GeometryTileWorker::setLayers(std::vector<Immutable<LayerProperties>> layers_,
-                                   std::set<std::string> availableImages_,
+                                   std::shared_ptr<const std::set<std::string>> availableImages_,
                                    uint64_t correlationID_) {
     MLN_TRACE_FUNC();
 
@@ -483,7 +483,7 @@ void GeometryTileWorker::parse() {
         // images/glyphs are available to add the features to the buckets.
         if (leaderImpl.getTypeInfo()->layout == LayerTypeInfo::Layout::Required) {
             std::unique_ptr<Layout> layout = LayerManager::get()->createLayout(
-                {parameters, fontFaces, glyphDependencies, imageDependencies, availableImages},
+                {parameters, fontFaces, glyphDependencies, imageDependencies, *availableImages},
                 std::move(geometryLayer),
                 group);
             if (layout->hasDependencies()) {
