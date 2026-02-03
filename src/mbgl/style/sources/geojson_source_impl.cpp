@@ -24,14 +24,13 @@ namespace mbgl {
 namespace style {
 
 class GeoJSONVTData final : public GeoJSONData {
+    // Synchronous tile access — matches SuperclusterData::getTile() pattern.
+    // The async scheduleAndReplyValue path introduced a frame-lag between
+    // camera updates and GeoJSON source rendering, causing visible marker
+    // wobble when the source coordinate tracks the camera center.
     void getTile(const CanonicalTileID& id, const std::function<void(TileFeatures)>& fn) final {
         assert(fn);
-        sequencedScheduler->scheduleAndReplyValue(
-            util::SimpleIdentity::Empty,
-            [id, geoJSONVT_impl = this->impl]() -> TileFeatures {
-                return geoJSONVT_impl->getTile(id.z, id.x, id.y).features;
-            },
-            fn);
+        fn(impl->getTile(id.z, id.x, id.y).features);
     }
 
     Features getChildren(const std::uint32_t) final { return {}; }
@@ -42,15 +41,10 @@ class GeoJSONVTData final : public GeoJSONData {
 
     friend GeoJSONData;
     GeoJSONVTData(const GeoJSON& geoJSON,
-                  const mapbox::geojsonvt::Options& options,
-                  std::shared_ptr<Scheduler> sequencedScheduler_)
-        : impl(std::make_shared<mapbox::geojsonvt::GeoJSONVT>(geoJSON, options)),
-          sequencedScheduler(std::move(sequencedScheduler_)) {
-        assert(sequencedScheduler);
-    }
+                  const mapbox::geojsonvt::Options& options)
+        : impl(std::make_shared<mapbox::geojsonvt::GeoJSONVT>(geoJSON, options)) {}
 
-    std::shared_ptr<mapbox::geojsonvt::GeoJSONVT> impl; // Accessed on worker thread.
-    std::shared_ptr<Scheduler> sequencedScheduler;
+    std::shared_ptr<mapbox::geojsonvt::GeoJSONVT> impl;
 };
 
 class SuperclusterData final : public GeoJSONData {
@@ -91,7 +85,7 @@ T evaluateFeature(const mapbox::feature::feature<double>& f,
 
 // static
 std::shared_ptr<GeoJSONData> GeoJSONData::create(const GeoJSON& geoJSON,
-                                                 std::shared_ptr<Scheduler> sequencedScheduler,
+                                                 std::shared_ptr<Scheduler> /*sequencedScheduler*/,
                                                  const Immutable<GeoJSONOptions>& options) {
     constexpr double scale = util::EXTENT / util::tileSize_D;
     if (options->cluster && geoJSON.is<Features>() && !geoJSON.get<Features>().empty()) {
@@ -130,7 +124,7 @@ std::shared_ptr<GeoJSONData> GeoJSONData::create(const GeoJSON& geoJSON,
     vtOptions.buffer = static_cast<uint16_t>(::round(scale * options->buffer));
     vtOptions.tolerance = scale * options->tolerance;
     vtOptions.lineMetrics = options->lineMetrics;
-    return std::shared_ptr<GeoJSONData>(new GeoJSONVTData(geoJSON, vtOptions, std::move(sequencedScheduler)));
+    return std::shared_ptr<GeoJSONData>(new GeoJSONVTData(geoJSON, vtOptions));
 }
 
 GeoJSONSource::Impl::Impl(std::string id_, Immutable<GeoJSONOptions> options_)

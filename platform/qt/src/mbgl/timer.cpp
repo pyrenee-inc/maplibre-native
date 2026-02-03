@@ -3,7 +3,9 @@
 #include <mbgl/util/run_loop.hpp>
 #include <mbgl/util/timer.hpp>
 
+#include <climits>
 #include <memory>
+#include <QDebug>
 
 namespace mbgl {
 namespace util {
@@ -17,8 +19,13 @@ void Timer::Impl::start(uint64_t timeout, uint64_t repeat_, std::function<void()
     repeat = repeat_;
     callback = std::move(cb);
 
+    // Clamp timeout to INT_MAX to avoid Qt warning about exceeding maximum interval
+    int clampedTimeout = (timeout > static_cast<uint64_t>(INT_MAX))
+        ? INT_MAX
+        : static_cast<int>(timeout);
+
     timer.setSingleShot(true);
-    timer.start(static_cast<std::chrono::milliseconds>(timeout));
+    timer.start(clampedTimeout);
 }
 
 void Timer::Impl::stop() {

@@ -16,6 +16,7 @@ GeoJSONTile::GeoJSONTile(const OverscaledTileID& overscaledTileID,
                          std::shared_ptr<style::GeoJSONData> data_,
                          TileObserver* observer_)
     : GeometryTile(overscaledTileID, std::move(sourceID_), parameters, observer_) {
+    syncParse = true;
     updateData(std::move(data_), false /*needsRelayout*/);
 }
 

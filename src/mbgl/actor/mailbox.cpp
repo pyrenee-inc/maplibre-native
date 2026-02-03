@@ -136,7 +136,10 @@ void Mailbox::receive() {
 
     {
         std::lock_guard<std::mutex> queueLock(queueMutex);
-        assert(!queue.empty());
+        if (queue.empty()) {
+            state = State::Idle;
+            return;
+        }
         message = std::move(queue.front());
         queue.pop();
         wasEmpty = queue.empty();

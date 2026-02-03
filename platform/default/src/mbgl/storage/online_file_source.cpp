@@ -500,7 +500,7 @@ void OnlineFileRequest::schedule(Duration timeout) {
     if (NetworkStatus::Get() == NetworkStatus::Status::Offline) {
         failedRequestReason = Response::Error::Reason::Connection;
         failedRequests = 1;
-        timeout = Duration::max();
+        return;
     }
 
     timer.start(timeout, Duration::zero(), [&] { impl.activateOrQueueRequest(this); });

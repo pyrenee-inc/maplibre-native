@@ -259,8 +259,18 @@ void GeometryTile::setData(std::unique_ptr<const GeometryTileData> data_) {
     pending = true;
 
     ++correlationID;
-    worker.self().invoke(
-        &GeometryTileWorker::setData, std::move(data_), imageManager->getAvailableImages(), correlationID);
+    if (syncParse) {
+        // Synchronous path: block until the worker finishes parsing so
+        // that the layout result is available for the current frame.
+        worker.self().ask(
+            &GeometryTileWorker::setData, std::move(data_), imageManager->getAvailableImages(), correlationID).wait();
+        // The worker's finalizeLayout() posted an onLayout message to
+        // our mailbox.  Process it now so layoutResult is up-to-date.
+        mailbox->receive();
+    } else {
+        worker.self().invoke(
+            &GeometryTileWorker::setData, std::move(data_), imageManager->getAvailableImages(), correlationID);
+    }
 }
 
 void GeometryTile::reset() {

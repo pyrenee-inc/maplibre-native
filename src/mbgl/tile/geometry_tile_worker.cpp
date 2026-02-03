@@ -399,7 +399,18 @@ void GeometryTileWorker::requestNewGlyphs(const GlyphDependencies& glyphDependen
 void GeometryTileWorker::requestNewImages(const ImageDependencies& imageDependencies) {
     MLN_TRACE_FUNC();
 
-    pendingImageDependencies = imageDependencies;
+    pendingImageDependencies.clear();
+    for (const auto& [name, type] : imageDependencies) {
+        // Skip images we already have locally from a previous request.
+        // This avoids a redundant async round-trip that delays
+        // finalizeLayout() by 1-2 frames on GeoJSON source updates.
+        const bool cached = (type == ImageType::Icon)
+            ? (iconMap.find(name) != iconMap.end())
+            : (patternMap.find(name) != patternMap.end());
+        if (!cached) {
+            pendingImageDependencies.emplace(name, type);
+        }
+    }
 
     if (!pendingImageDependencies.empty()) {
         parent.invoke(&GeometryTile::getImages, std::make_pair(pendingImageDependencies, ++imageCorrelationID));

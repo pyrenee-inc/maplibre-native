@@ -105,6 +105,12 @@ protected:
     const GeometryTileData* getData() const;
     LayerRenderData* getLayerRenderData(const style::Layer::Impl&);
 
+    // When true, setData() blocks until the worker finishes parsing and
+    // the layout result is applied.  This eliminates the 1–2 frame lag
+    // between a GeoJSON source update and the rendered geometry, which
+    // causes visible marker wobble when source coordinates track the camera.
+    bool syncParse = false;
+
     // Used to signal the worker that it should abandon parsing this tile as soon as possible.
     std::atomic<bool> obsolete{false};
 
