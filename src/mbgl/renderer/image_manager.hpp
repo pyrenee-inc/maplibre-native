@@ -51,6 +51,7 @@ public:
     void reduceMemoryUse();
     void reduceMemoryUseIfCacheSizeExceedsLimit();
     std::set<std::string> getAvailableImages() const;
+    std::shared_ptr<const std::set<std::string>> getAvailableImagesShared() const;
 
     ImageVersionMap updatedImageVersions;
 
@@ -72,6 +73,7 @@ private:
 
     ImageManagerObserver* observer = nullptr;
 
+    std::shared_ptr<const std::set<std::string>> availableImagesShared;
     mutable std::recursive_mutex rwLock;
 };
 

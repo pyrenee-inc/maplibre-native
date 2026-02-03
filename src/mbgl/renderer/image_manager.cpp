@@ -55,6 +55,7 @@ void ImageManager::addImage(Immutable<style::Image::Impl> image_) {
 
     availableImages.emplace(image_->id);
     images.emplace(image_->id, std::move(image_));
+    availableImagesShared.reset();
 }
 
 bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
@@ -99,6 +100,7 @@ void ImageManager::removeImage(const std::string& id) {
     images.erase(it);
     availableImages.erase(id);
     updatedImageVersions.erase(id);
+    availableImagesShared.reset();
 }
 
 const style::Image::Impl* ImageManager::getImage(const std::string& id) const {
@@ -207,6 +209,15 @@ std::set<std::string> ImageManager::getAvailableImages() const {
     }
 }
 
+std::shared_ptr<const std::set<std::string>> ImageManager::getAvailableImagesShared() const {
+    std::lock_guard<std::recursive_mutex> lock(rwLock);
+    if (!availableImagesShared) {
+        const_cast<ImageManager*>(this)->availableImagesShared =
+            std::make_shared<const std::set<std::string>>(availableImages);
+    }
+    return availableImagesShared;
+}
+
 void ImageManager::clear() {
     std::lock_guard<std::recursive_mutex> readWriteLock(rwLock);
 
@@ -218,6 +229,7 @@ void ImageManager::clear() {
     updatedImageVersions.clear();
     requestedImages.clear();
     loaded = false;
+    availableImagesShared.reset();
 }
 
 void ImageManager::checkMissingAndNotify(ImageRequestor& requestor, const ImageRequestPair& pair) {
