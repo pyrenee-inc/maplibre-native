@@ -259,17 +259,18 @@ void GeometryTile::setData(std::unique_ptr<const GeometryTileData> data_) {
     pending = true;
 
     ++correlationID;
+    auto avail = imageManager->getAvailableImagesShared();
     if (syncParse) {
         // Synchronous path: block until the worker finishes parsing so
         // that the layout result is available for the current frame.
         worker.self().ask(
-            &GeometryTileWorker::setData, std::move(data_), imageManager->getAvailableImages(), correlationID).wait();
+            &GeometryTileWorker::setData, std::move(data_), avail, correlationID).wait();
         // The worker's finalizeLayout() posted an onLayout message to
         // our mailbox.  Process it now so layoutResult is up-to-date.
         mailbox->receive();
     } else {
         worker.self().invoke(
-            &GeometryTileWorker::setData, std::move(data_), imageManager->getAvailableImages(), correlationID);
+            &GeometryTileWorker::setData, std::move(data_), avail, correlationID);
     }
 }
 
@@ -328,7 +329,7 @@ void GeometryTile::setLayers(const std::vector<Immutable<LayerProperties>>& laye
 
     ++correlationID;
     worker.self().invoke(
-        &GeometryTileWorker::setLayers, std::move(impls), imageManager->getAvailableImages(), correlationID);
+        &GeometryTileWorker::setLayers, std::move(impls), imageManager->getAvailableImagesShared(), correlationID);
 }
 
 void GeometryTile::setShowCollisionBoxes(const bool showCollisionBoxes_) {
