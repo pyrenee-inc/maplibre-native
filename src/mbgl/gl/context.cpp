@@ -127,7 +127,8 @@ void Context::beginFrame() {
     frameInFlightFence = std::make_shared<gl::Fence>();
 
     // Run allocator defragmentation on this frame interval.
-    constexpr auto defragFreq = 4;
+    // Pi 4: defragment() is expensive (~40% CPU at freq=4). Reduce to ~1/sec.
+    constexpr auto defragFreq = 30;
 
     if (frameNum == defragFreq) {
         uboAllocator->defragment(frameInFlightFence);
