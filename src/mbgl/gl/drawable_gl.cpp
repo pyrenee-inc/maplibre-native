@@ -32,9 +32,11 @@ void DrawableGL::draw(PaintParameters& parameters) const {
 
     if (shader) {
         const auto& shaderGL = static_cast<const ShaderProgramGL&>(*shader);
-        if (shaderGL.getGLProgramID() != context.program.getCurrentValue()) {
-            context.program = shaderGL.getGLProgramID();
-        }
+        // Always go through State::operator= so the dirty flag is respected.
+        // The State itself skips the GL call when !dirty && value == currentValue,
+        // but when dirty (e.g. after setDirtyState or external GL usage by Qt),
+        // glUseProgram must be re-issued even if the cached value matches.
+        context.program = shaderGL.getGLProgramID();
     }
     if (!shader || context.program.getCurrentValue() == 0) {
         mbgl::Log::Warning(Event::General, "Missing shader for drawable " + util::toString(getID()) + "/" + getName());
