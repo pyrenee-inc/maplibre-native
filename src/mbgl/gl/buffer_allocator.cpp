@@ -319,6 +319,16 @@ public:
                 continue;
             }
 
+            // Recycle empty pages only. Relocating live UBOs causes severe and
+            // progressively increasing render stalls on embedded OpenGL drivers.
+            //
+            // Partially occupied pages cannot be compacted. A single long-lived
+            // allocation can therefore pin an entire page.
+            if (fragBuffer.numRefs() != 0) {
+                ++it;
+                continue;
+            }
+
             // This buffer is fragmented. Move allocations from this buffer and append to fresh ones
             // so that this one may be recycled.
 
